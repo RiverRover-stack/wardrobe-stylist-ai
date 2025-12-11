@@ -103,7 +103,7 @@ with st.sidebar:
                         "color": item_data['color'],
                         "season": item_data['season'],
                         "styling_tip": item_data['styling_tip'],
-                        "img_url": image_url
+                        "image_url": image_url
                     }
                     
                     supabase.table('clothes').insert(data_to_insert).execute()
