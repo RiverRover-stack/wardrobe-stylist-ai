@@ -107,9 +107,16 @@ if len(closet_items) > 0:
             inventory_text = str(closet_items) 
             
             stylist_prompt = f"""
-            You are a stylist. Here is my inventory: {inventory_text}
-            Create an outfit for: {occasion}, Weather: {weather}.
-            Pick specific items by name.
+            Act as a fashion stylist. 
+                Here is my closet inventory: {inventory_text}
+                
+                Create a complete outfit for this occasion: {occasion}
+                Weather: {weather}
+                
+                Rules:
+                1. Pick 1 Top, 1 Bottom, and (optional) Shoes/Accessories from the inventory.
+                2. Explain WHY you chose this combo.
+                3. If I don't have enough items, tell me what basic item I am missing to complete the look.
             """
             
             model = genai.GenerativeModel('gemini-2.5-flash')
