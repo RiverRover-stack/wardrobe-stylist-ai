@@ -36,7 +36,7 @@ with st.sidebar:
             with st.spinner("AI is analyzing..."):
                 try:
                     # AI Analysis
-                    model = genai.GenerativeModel('gemini-1.5-flash')
+                    model = genai.GenerativeModel('gemini-2.5-flash')
                     prompt = """
                     Analyze this clothing item. Return ONLY a valid JSON object with these keys:
                     {
@@ -112,6 +112,6 @@ if len(closet_items) > 0:
             Pick specific items by name.
             """
             
-            model = genai.GenerativeModel('gemini-1.5-flash')
+            model = genai.GenerativeModel('gemini-2.5-flash')
             advice = model.generate_content(stylist_prompt)
             st.markdown(advice.text)
