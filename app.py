@@ -4,6 +4,39 @@ from PIL import Image
 import os
 import json
 from supabase import create_client, Client
+import base64
+import io
+import time
+import requests
+
+
+def get_current_weather():
+    try:
+        # Get location via IP (Simplest way, might be slightly inaccurate)
+        ip_info = requests.get('http://ipinfo.io/json').json()
+        city = ip_info.get('city', 'Unknown Location')
+        
+        # Use a free weather API service
+        # For simplicity, we'll use a hardcoded coordinate or a simple text-based forecast
+        # For a true public app, you'd need a location API key like OpenWeatherMap
+        
+        # Simple Logic: Check temperature from a free service
+        # Using Open-Meteo for a simple forecast
+        weather_api_url = "https://api.open-meteo.com/v1/forecast?latitude=12.97&longitude=77.59&current=temperature_2m,weather_code" # Bangalore
+        weather_data = requests.get(weather_api_url).json()
+        temp_c = weather_data['current']['temperature_2m']
+        
+        if temp_c > 30:
+            return "Hot and Sunny"
+        elif temp_c < 18:
+            return "Cold"
+        else:
+            return "Mild"
+
+    except Exception:
+        # Fallback if API fails
+        return "Mild"
+
 
 # 1. Setup Page
 st.set_page_config(page_title="Wardrobe.AI", page_icon="👕", layout="wide")
@@ -50,14 +83,27 @@ with st.sidebar:
                     response = model.generate_content([prompt, image])
                     text_response = response.text.replace("```json", "").replace("```", "")
                     item_data = json.loads(text_response)
+
+                    img_byte_arr = io.BytesIO()
+                    image.save(img_byte_arr, format=uploaded_file.type.split('/')[-1].upper() if uploaded_file.type else 'PNG')
+                    img_bytes = img_byte_arr.getvalue()
                     
+                    filename = f"{st.session_state['user_id']}/{item_data['item_name'].replace(' ', '_')}_{int(time.time())}.png"
+
+                    # Upload the file
+                    supabase.storage.from_("item_images").upload(filename, img_bytes, file_options={"content-type": uploaded_file.type})
+
+                    # Get the public URL for the image
+                    image_url = supabase.storage.from_("item_images").get_public_url(filename)
+
                     # SAVE TO SUPABASE DB
                     data_to_insert = {
                         "item_name": item_data['item_name'],
                         "category": item_data['category'],
                         "color": item_data['color'],
                         "season": item_data['season'],
-                        "styling_tip": item_data['styling_tip']
+                        "styling_tip": item_data['styling_tip'],
+                        "img_url": image_url
                     }
                     
                     supabase.table('clothes').insert(data_to_insert).execute()
@@ -81,6 +127,7 @@ else:
     # Display as a list/grid
     for item in closet_items:
         with st.expander(f"**{item['item_name']}** ({item['category']})"):
+            st.image(item['image_url'], width=150)
             st.write(f"🎨 **Color:** {item['color']}")
             st.write(f"🍂 **Season:** {item['season']}")
             st.info(f"💡 **Tip:** {item['styling_tip']}")
@@ -98,8 +145,12 @@ if len(closet_items) > 0:
     col1, col2 = st.columns(2)
     with col1:
         occasion = st.selectbox("Occasion", ["Casual", "Gym", "Date Night", "Office"])
+
+    auto_weather = get_current_weather()
     with col2:
-        weather = st.selectbox("Weather", ["Sunny", "Rainy", "Cold"])
+        st.markdown(f"**Detected Weather:** `{auto_weather}`")
+        # You can keep the manual selection as a fallback
+        weather = st.selectbox("Override Weather", ["Auto", "Sunny", "Rainy", "Cold"], index=0)
 
     if st.button("Generate Outfit"):
         with st.spinner("Thinking..."):
