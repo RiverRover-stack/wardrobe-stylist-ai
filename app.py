@@ -56,6 +56,8 @@ except:
 genai.configure(api_key=GOOGLE_API_KEY)
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
+st.session_state['user_id'] = "demo_user"
+
 # --- SIDEBAR: Upload & Analyze ---
 with st.sidebar:
     st.title("➕ Add New Item")
